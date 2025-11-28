@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>RentelBike</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;font-family:Arial, sans-serif;background:#f2f2f2}
+header{background:#0f172a;color:#fff;padding:14px;text-align:center;font-weight:bold}
+.page{display:none;padding:15px;padding-bottom:90px}
+.page.active{display:block}
+.card{background:#fff;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+input,select,textarea{width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;margin-top:8px;box-sizing:border-box}
+button{width:100%;padding:12px;border:none;border-radius:6px;margin-top:10px;font-weight:bold}
+.green{background:#22c55e;color:#fff}
+.gray{background:#64748b;color:#fff}
+nav{position:fixed;bottom:0;width:100%;display:flex;background:#fff;border-top:1px solid #ccc}
+nav button{flex:1;background:#fff;border:none;padding:10px;font-size:14px}
+.profile-item{padding:14px;border-bottom:1px solid #eee;cursor:pointer}
+/* Ensure img-slider shows images horizontally */
+.img-slider{display:flex;gap:8px;overflow-x:auto;margin-bottom:10px}
+.img-slider img{
+  width:90%; 
+  min-width: 90%; /* For detail page main slider */
+  height: 150px;
+  object-fit:cover;
+  border-radius:10px
+}
+
+/* Specific style for small images in admin panel to fit three/four in a row */
+.admin-img-row img {
+    width: 30%;
+    min-width: 30%;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+small{font-size:11px;color:#6b7280}
+</style>
+</head>
+
+<body>
+<header>RentelBike</header>
+
+<div id="login" class="page active">
+  <div class="card">
+    <h3>Login</h3>
+    <input id="lphone" placeholder="Mobile" maxlength="10"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <input id="lpass" placeholder="Password / OTP" type="password">
+    <button class="green" onclick="login()">Login</button>
+  </div>
+</div>
+
+<div id="home" class="page">
+  <div class="card">
+    <button class="green" onclick="openPage('explore')">Explore Bikes</button>
+    <button class="green" onclick="openPage('listbike')">List a Bike</button>
+    <button class="green" onclick="openAdminLogin('adminBike')">Admin Bike Panel</button>
+    <button class="green" onclick="openAdminLogin('adminKYC')">Admin KYC Panel</button>
+  </div>
+</div>
+
+<div id="listbike" class="page">
+  <div class="card">
+    <h3>List Bike</h3>
+    <input id="ownerName" placeholder="Owner Name *">
+    <input id="ownerPhone" placeholder="Owner Phone *" maxlength="10"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <input id="bikeName" placeholder="Bike Name *">
+    <input id="rentDay" placeholder="Rent per Day *" type="number">
+    <label>Bike Expiry *</label>
+    <input type="date" id="bikeExpiry">
+
+    <label>Front Photo *</label><input type="file" id="imgFront" accept="image/*">
+    <label>Back Photo *</label><input type="file" id="imgBack" accept="image/*">
+    <label>Left Photo *</label><input type="file" id="imgLeft" accept="image/*">
+    <label>Right Photo *</label><input type="file" id="imgRight" accept="image/*">
+
+    <button class="green" onclick="submitBike()">Submit</button>
+    <button class="gray" onclick="back()">← Back</button>
+  </div>
+</div>
+
+<div id="explore" class="page">
+  <div id="bikeList"></div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="detail" class="page">
+  <div class="card">
+    <div class="img-slider">
+      <img id="pf" alt="Front Photo">
+      <img id="pb" alt="Back Photo">
+      <img id="pl" alt="Left Photo">
+      <img id="pr" alt="Right Photo">
+    </div>
+    <h3 id="dBike"></h3>
+    ₹<span id="dRate"></span>/day
+    <div style="margin:10px 0;display:flex;justify-content:space-between;align-items:center">
+      <button class="gray" onclick="changeDays(-1)">−</button>
+      <b><span id="days">1</span> Day(s)</b>
+      <button class="gray" onclick="changeDays(1)">+</button>
+    </div>
+    <p>Total: ₹<span id="totalAmt"></span></p>
+    <button class="green" onclick="checkKYCAndProceed()">Rent Now</button>
+    <button class="gray" onclick="back()">← Back</button>
+  </div>
+</div>
+
+<div id="verify" class="page">
+  <div class="card">
+    <h3>Rental Verification</h3>
+
+    <input id="vname" placeholder="Full Name *">
+
+    <input id="vphone" placeholder="Mobile Number *" maxlength="10"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+
+    <input id="vaad" placeholder="Aadhaar Number *" maxlength="12"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+
+    <label>Aadhaar Photo *</label>
+    <input type="file" id="faad" accept="image/*">
+
+    <input id="vpan" placeholder="PAN Number *">
+    <label>PAN Photo *</label>
+    <input type="file" id="fpan" accept="image/*">
+
+    <input id="vdl" placeholder="Driving Licence Number *">
+    <label>DL Photo *</label>
+    <input type="file" id="fdl" accept="image/*">
+
+    <button class="green" onclick="goPayment()">Proceed to Payment</button>
+    <button class="gray" onclick="back()">← Back</button>
+  </div>
+</div>
+
+<div id="completeKYC" class="page">
+  <div class="card">
+    <h3>Complete KYC</h3>
+
+    <input id="ck_name" placeholder="Full Name *">
+    <input id="ck_phone" placeholder="Mobile *" maxlength="10"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <input id="ck_aadhaar" placeholder="Aadhaar Number *" maxlength="12"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+
+    <label>Aadhaar Photo *</label>
+    <input type="file" id="ck_aadhaar_photo" accept="image/*">
+
+    <input id="ck_pan" placeholder="PAN Number *">
+    <label>PAN Photo *</label>
+    <input type="file" id="ck_pan_photo" accept="image/*">
+
+    <input id="ck_dl" placeholder="Driving Licence Number *">
+    <label>DL Photo *</label>
+    <input type="file" id="ck_dl_photo" accept="image/*">
+
+    <button class="green" onclick="submitCompleteKYC()">Submit KYC</button>
+    <button class="gray" onclick="back()">← Back</button>
+  </div>
+</div>
+
+<div id="payment" class="page">
+  <div class="card">
+    <h3>Payment</h3>
+    <p>Amount: ₹<span id="payAmount"></span></p>
+
+    <select id="payMode" onchange="showPay()">
+      <option value="">Select Payment Mode</option>
+      <option value="wallet">Wallet</option>
+      <option value="upi">UPI</option>
+      <option value="card">Card</option>
+    </select>
+
+    <div id="walletBox" style="display:none;margin-top:8px">
+      Wallet Balance: ₹<b id="walletBal"></b><br>
+      <button class="green" onclick="openPage('walletRecharge')">Recharge Wallet</button>
+    </div>
+
+    <div id="upiBox" style="display:none">
+      <input id="upiId" placeholder="example@upi">
+    </div>
+
+    <div id="cardBox" style="display:none">
+      <input id="cardNo" placeholder="Card Number" maxlength="16"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      <input id="cardExp" placeholder="MM/YY">
+      <input id="cardCvv" placeholder="CVV" maxlength="3"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    </div>
+
+    <button class="green" onclick="pay()">Pay Now</button>
+    <button class="gray" onclick="back()">← Back</button>
+  </div>
+</div>
+
+<div id="profile" class="page">
+  <div class="card">
+    <b>Logged in:</b> <span id="pPhone"></span><br>
+    <b>Wallet Balance:</b> ₹<span id="pWallet"></span>
+  </div>
+
+  <div class="profile-item" onclick="openWallet()">💰 Wallet</div>
+  <div class="profile-item" onclick="openTxns()">📜 Transaction History</div>
+  <div class="profile-item" onclick="openInvoices()">🧾 Invoices</div>
+  <div class="profile-item" onclick="openRentals()">🏍 Rental History</div>
+  <div class="profile-item" onclick="openListed()">📋 Your Listed Bikes</div>
+
+  <div class="profile-item" onclick="openCompleteKYC()">
+    ✅ Complete KYC :
+    <b id="kycStatusText"></b>
+    <div id="kycRejectReason" style="font-size:12px;"></div>
+  </div>
+
+  <div class="profile-item" onclick="openPage('subscription')">💳 Subscription</div>
+  <div class="profile-item" onclick="openPage('addressPage')">📍 Saved Address</div>
+  <div class="profile-item" onclick="openPage('securityPage')">🔒 Security Deposit</div>
+  <div class="profile-item" onclick="openNotifs()">🔔 Notifications</div>
+  <div class="profile-item" onclick="openPage('about')">ℹ About Us</div>
+  <div class="profile-item" onclick="openPage('support')">📞 Help & Support</div>
+  <div class="profile-item" onclick="logout()" style="color:red">🚪 Logout</div>
+</div>
+
+<div id="walletPage" class="page">
+  <div class="card">
+    <h3>Wallet</h3>
+    Balance: ₹<b id="walletShow"></b>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="walletRecharge" class="page">
+  <div class="card">
+    <h3>Recharge Wallet (UPI)</h3>
+    <input id="reAmt" placeholder="Amount">
+    <input id="reUpi" placeholder="your@upi">
+    <button class="green" onclick="recharge()">Recharge</button>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="txnPage" class="page">
+  <div class="card">
+    <h3>Transactions</h3>
+    <div id="txnList"></div>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="invoicePage" class="page">
+  <div class="card">
+    <h3>Invoices</h3>
+    <div id="invList"></div>
+    <button class="green" onclick="downloadInvoice()">Download Last Invoice (Print)</button>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="rentalHistory" class="page">
+  <div class="card">
+    <h3>Your Rentals</h3>
+    <div id="rentalList"></div>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="listedBikes" class="page">
+  <div class="card">
+    <h3>Your Listed Bikes</h3>
+    <div id="listedList"></div>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="subscription" class="page">
+  <div class="card">
+    <h3>Subscription</h3>
+    <p>₹100 / month — unlock owner contact details (demo)</p>
+    <button class="green" onclick="alert('Demo only – real subscription needs backend')">Subscribe</button>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="addressPage" class="page">
+  <div class="card">
+    <h3>Saved Address</h3>
+    <p>Demo placeholder – real implementation needs backend.</p>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="securityPage" class="page">
+  <div class="card">
+    <h3>Security Deposit</h3>
+    <p>Default deposit policy managed by platform (demo).</p>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="notifPage" class="page">
+  <div class="card">
+    <h3>Notifications</h3>
+    <div id="notifList"></div>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="about" class="page">
+  <div class="card">
+    <h3>About RentelBike</h3>
+    <p>Founder: Shivam (Founder & Operations Head)<br>
+       Co-Founder: Utkarsh (Co-founder & Director)<br>
+       CEO: Rishikesh (CEO & Business Strategy)</p>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="support" class="page">
+  <div class="card">
+    <h3>Help & Support</h3>
+    <p>Email: support@rentelbike.com</p>
+    <p>Phone: +91-9000000000</p>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="admin" class="page">
+  <div class="card"><h3>Admin Bike Approval</h3></div>
+  <div id="adminList"></div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="adminKYC" class="page">
+  <div class="card">
+    <h3>Admin – KYC Review</h3>
+    <p>Current Status: <b id="adminKycState"></b></p>
+    <textarea id="rejectReason" placeholder="Reject reason (required for reject)"
+      style="width:100%;height:70px"></textarea>
+    
+    <button class="green" onclick="approveKYC()">✅ Approve</button>
+    <button class="gray" onclick="rejectKYC()">❌ Reject</button>
+  </div>
+  <button class="gray" onclick="back()">← Back</button>
+</div>
+
+<div id="adminLogin" class="page">
+  <div class="card">
+    <h3>Admin Login</h3>
+    <input id="adminPhone" placeholder="Admin Phone">
+    <input id="adminPass" type="password" placeholder="Admin Password">
+    <button class="green" onclick="adminLogin()">Login as Admin</button>
+    <button class="gray" onclick="back()">← Back</button>
+  </div>
+</div>
+
+<nav>
+  <button onclick="nav('home')">Home</button>
+  <button onclick="nav('explore')">Bikes</button>
+  <button onclick="nav('profile')">Profile</button>
+</nav>
+
+<script>
+// ====== STATE ======
+let stack = [];
+let bikes = JSON.parse(localStorage.getItem('bikes') || '[]');
+let currentBikeIndex = null;
+let days = 1;
+
+// --- DUMMY KYC DATA FOR ADMIN DEMO ---
+let kycData = JSON.parse(localStorage.getItem('kycData') || 'null'); 
+// ---------------------------------------
+
+let wallet = Number(localStorage.getItem('wallet') || '5000');
+let transactions = JSON.parse(localStorage.getItem('txns') || '[]');
+let invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+let rentals = JSON.parse(localStorage.getItem('rentals') || '[]');
+let notifs = JSON.parse(localStorage.getItem('notifs') || '[]');
+
+let kycStatus = localStorage.getItem("kycStatus") || "none";
+let kycReason = localStorage.getItem("kycReason") || "";
+let kycSubmittedAt = Number(localStorage.getItem("kycSubmittedAt") || 0);
+
+const ADMIN_PHONE = "9336231919";       // You can change this
+const ADMIN_PASS  = "RB@Admin2025";     // Secret password
+let desiredAdminPage = null;
+
+// ====== SAVE ======
+function saveAll(){
+  localStorage.setItem('bikes', JSON.stringify(bikes));
+  localStorage.setItem('wallet', wallet);
+  localStorage.setItem('txns', JSON.stringify(transactions));
+  localStorage.setItem('invoices', JSON.stringify(invoices));
+  localStorage.setItem('rentals', JSON.stringify(rentals));
+  localStorage.setItem('notifs', JSON.stringify(notifs));
+  localStorage.setItem('kycStatus', kycStatus);
+  localStorage.setItem('kycReason', kycReason);
+  localStorage.setItem('kycSubmittedAt', kycSubmittedAt);
+  localStorage.setItem('kycData', JSON.stringify(kycData)); // Save KYC Data
+}
+
+function addNotif(msg){
+  notifs.push({msg,date:new Date().toLocaleString()});
+  saveAll();
+}
+
+// ====== BASE64 UTILITY FUNCTION (To persist images in LocalStorage) ======
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// ====== NAV ======
+function openPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  stack.push(id);
+
+  if(id === 'explore') renderBikes();
+
+  if(id === 'profile'){
+    const phoneInput = document.getElementById('lphone');
+    if (phoneInput) {
+        pPhone.innerText = phoneInput.value;
+    } else {
+        pPhone.innerText = 'N/A';
+    }
+    
+    pWallet.innerText = wallet;
+    kycStatusText.innerText = kycStatus.toUpperCase();
+    if(kycStatus === "rejected"){
+      kycRejectReason.innerText = "Reason: " + kycReason;
+    }else if(kycStatus === "pending"){
+      kycRejectReason.innerText = getKycTimerText();
+    }else{
+      kycRejectReason.innerText = "";
+    }
+  }
+}
+
+function back(){
+  stack.pop();
+  openPage(stack.pop() || 'home');
+}
+
+function nav(id){
+  stack = [];
+  openPage(id);
+}
+
+// **====== LOGIN ======**
+function login(){
+  if(lphone.value.length!==10 || lpass.value.length<4){
+    alert('Invalid mobile number or password');
+    return;
+  }
+  openPage('home');
+}
+// =======================================================
+
+
+// ====== KYC TIMER TEXT ======
+function getKycTimerText(){
+  if(kycStatus !== "pending") return "";
+  if(!kycSubmittedAt) return "⏳ Under review";
+
+  let diff = Date.now() - kycSubmittedAt;
+  let hrs = Math.floor(diff / (1000*60*60));
+  if(hrs >= 24){
+    return "⏳ Review delayed – please contact support";
+  }
+  return `⏳ Under review – approx ${24 - hrs} hours remaining`;
+}
+
+// ====== BIKE LISTING (Modified to use Base64) ======
+async function submitBike(){
+  if(
+    !ownerName.value.trim() ||
+    ownerPhone.value.length!==10 ||
+    !bikeName.value.trim() ||
+    !rentDay.value ||
+    !bikeExpiry.value ||
+    !imgFront.files[0] || !imgBack.files[0] ||
+    !imgLeft.files[0] || !imgRight.files[0]
+  ){
+    alert('Please fill all fields and upload 4 photos');
+    return;
+  }
+  
+  // Convert files to Base64 strings
+  const front = await getBase64(imgFront.files[0]);
+  const backImg = await getBase64(imgBack.files[0]);
+  const left = await getBase64(imgLeft.files[0]);
+  const right = await getBase64(imgRight.files[0]);
+
+  bikes.push({
+    id: Date.now(),
+    bike: bikeName.value,
+    rent: Number(rentDay.value),
+    owner: ownerName.value,
+    ownerPhone: ownerPhone.value,
+    expiry: bikeExpiry.value,
+    status: 'pending',
+    photos:{front,back:backImg,left,right}
+  });
+  saveAll();
+  alert('Bike submitted for approval');
+  back();
+}
+
+// ====== EXPLORE (Modified to use Base64) ======
+function renderBikes(){
+  bikeList.innerHTML = '';
+  const approvedBikes = bikes.filter(b=>b.status==='approved');
+  
+  approvedBikes.forEach((b,i)=>{
+    bikeList.innerHTML += `
+      <div class="card" onclick="openBike(${i})"> 
+        <img src="${b.photos.front}" style="width:100%;height:150px;object-fit:cover;border-radius:8px" alt="${b.bike} Front">
+        <b>${b.bike}</b><br>₹${b.rent}/day
+      </div>`;
+  });
+}
+
+function openBike(originalIndex){
+  const approvedBikes = bikes.filter(bike => bike.status === 'approved');
+  const b = approvedBikes[originalIndex];
+
+  if (!b) {
+      alert("Bike not found or not approved.");
+      return;
+  }
+  
+  currentBikeIndex = originalIndex;
+
+  // Set the images for the detail view using Base64
+  document.getElementById('pf').src = b.photos.front;
+  document.getElementById('pb').src = b.photos.back;
+  document.getElementById('pl').src = b.photos.left;
+  document.getElementById('pr').src = b.photos.right;
+  
+  document.getElementById('dBike').innerText = b.bike;
+  document.getElementById('dRate').innerText = b.rent;
+  
+  days = 1;
+  calcTotal();
+  openPage('detail');
+}
+// =======================================================
+
+
+function changeDays(n){
+  days = Math.max(1, days + n);
+  calcTotal();
+}
+
+function calcTotal(){
+  document.getElementById('days').innerText = days;
+  const rent = Number(document.getElementById('dRate').innerText || 0);
+  const total = rent * days;
+  document.getElementById('totalAmt').innerText = total;
+}
+
+// ====== KYC GATE ON RENT ======
+function checkKYCAndProceed(){
+  if(kycStatus !== "approved"){
+    alert("❌ Complete KYC and wait for admin approval before renting.");
+    openCompleteKYC();
+    return;
+  }
+  openPage('verify');
+}
+
+// ====== RENT VERIFICATION ======
+async function goPayment(){
+  if(
+    !vname.value.trim() ||
+    vphone.value.length !== 10 ||
+    vaad.value.length !== 12 ||
+    !faad.files[0] ||
+    !vpan.value.trim() ||
+    !fpan.files[0] ||
+    !vdl.value.trim() ||
+    !fdl.files[0]
+  ){
+    alert("Please complete all rental verification details");
+    return;
+  }
+  
+  const rent = Number(dRate.innerText || 0);
+  const total = rent * days;
+
+  payAmount.innerText = total;
+  walletBal.innerText = wallet;
+  openPage('payment');
+}
+
+// ====== COMPLETE KYC (Modified to use Base64) ======
+function openCompleteKYC(){
+  openPage('completeKYC');
+}
+
+async function submitCompleteKYC(){
+  if(
+    !ck_name.value.trim() ||
+    ck_phone.value.length !== 10 ||
+    ck_aadhaar.value.length !== 12 ||
+    !ck_aadhaar_photo.files[0] ||
+    !ck_pan.value.trim() ||
+    !ck_pan_photo.files[0] ||
+    !ck_dl.value.trim() ||
+    !ck_dl_photo.files[0]
+  ){
+    alert("Please complete all KYC details");
+    return;
+  }
+
+  // Convert KYC files to Base64 strings for persistent storage
+  const aadhaar_photo = await getBase64(ck_aadhaar_photo.files[0]);
+  const pan_photo = await getBase64(ck_pan_photo.files[0]);
+  const dl_photo = await getBase64(ck_dl_photo.files[0]);
+
+  // Store KYC data for admin review
+  kycData = {
+    name: ck_name.value,
+    phone: ck_phone.value,
+    aadhaar: ck_aadhaar.value,
+    aadhaar_photo,
+    pan: ck_pan.value,
+    pan_photo,
+    dl: ck_dl.value,
+    dl_photo,
+  };
+
+  kycStatus = "pending";
+  kycReason = "";
+  kycSubmittedAt = Date.now();
+
+  saveAll();
+  addNotif("🔐 KYC submitted for review");
+  alert("✅ KYC submitted. Under admin review");
+  openPage("profile");
+}
+
+// ====== PAYMENT ======
+function showPay(){
+  walletBox.style.display = 'none';
+  upiBox.style.display = 'none';
+  cardBox.style.display = 'none';
+  if(payMode.value==='wallet') walletBox.style.display='block';
+  if(payMode.value==='upi') upiBox.style.display='block';
+  if(payMode.value==='card') cardBox.style.display='block';
+}
+
+function pay(){
+  const mode = payMode.value;
+  if(!mode){ alert('Select payment mode'); return; }
+
+  if(kycStatus !== "approved"){
+    alert("❌ KYC not approved yet. Payment blocked.");
+    return;
+  }
+
+  const amount = Number(payAmount.innerText || '0');
+  if(amount<=0){ alert('Invalid amount'); return; }
+
+  if(mode==='wallet'){
+    if(wallet < amount){
+      alert('Low wallet balance');
+      return;
+    }
+  }else if(mode==='upi'){
+    if(!upiId.value.includes('@')){
+      alert('Invalid UPI ID');
+      return;
+    }
+  }else if(mode==='card'){
+    if(cardNo.value.length!==16 || cardCvv.value.length!==3 || !cardExp.value.trim()){
+      alert('Invalid card details');
+      return;
+    }
+  }
+
+  // --- Payment Successful Simulation ---
+  if(mode==='wallet'){
+    wallet -= amount;
+  }
+
+  const bikeNameStr = dBike.innerText;
+  const now = new Date();
+  const rentalDuration = days;
+
+  transactions.push({
+    date: now.toLocaleString(),
+    amount,
+    mode,
+    bike: bikeNameStr,
+    days: rentalDuration
+  });
+
+  rentals.push({
+    bike: bikeNameStr,
+    amount,
+    days: rentalDuration,
+    date: now.toLocaleString()
+  });
+
+  invoices.push({
+    id: 'INV'+now.getTime(),
+    date: now.toLocaleString(),
+    bike: bikeNameStr,
+    days: rentalDuration,
+    amount,
+    renter: vname.value 
+  });
+
+  addNotif(`✅ Rented **${bikeNameStr}** for ${rentalDuration} days`);
+  saveAll();
+  alert(`✅ Payment of ₹${amount} successful! Enjoy your ride!`);
+  nav('home');
+}
+
+// ====== PROFILE FUNCTIONS (Demo/Placeholder) ======
+
+function logout(){
+  if(confirm("Are you sure you want to logout?")){
+    stack = [];
+    openPage('login');
+  }
+}
+
+function openWallet(){
+    walletShow.innerText = wallet;
+    openPage('walletPage');
+}
+
+function openTxns(){
+    txnList.innerHTML = transactions.map(t =>
+        `<div style="border-bottom:1px solid #eee;padding:8px 0;">
+            <b>₹${t.amount}</b> for ${t.bike}<br>
+            <small>${t.date} (${t.mode})</small>
+        </div>`
+    ).join('') || 'No transactions yet.';
+    openPage('txnPage');
+}
+
+function openInvoices(){
+    invList.innerHTML = invoices.map(i =>
+        `<div style="border-bottom:1px solid #eee;padding:8px 0;">
+            Invoice #${i.id.slice(-5)}: <b>₹${i.amount}</b> for ${i.bike} (${i.days} days)<br>
+            <small>${i.date}</small>
+        </div>`
+    ).join('') || 'No invoices found.';
+    openPage('invoicePage');
+}
+
+function downloadInvoice(){
+    alert('Simulating download/print for last invoice...');
+}
+
+function openRentals(){
+    rentalList.innerHTML = rentals.map(r =>
+        `<div style="border-bottom:1px solid #eee;padding:8px 0;">
+            **${r.bike}** | ₹${r.amount} (${r.days} days)<br>
+            <small>Rented on: ${r.date}</small>
+        </div>`
+    ).join('') || 'No rental history.';
+    openPage('rentalHistory');
+}
+
+function openListed(){
+    const phoneInput = document.getElementById('lphone');
+    const userPhone = phoneInput ? phoneInput.value : '';
+
+    listedList.innerHTML = bikes.filter(b => b.ownerPhone === userPhone).map(b =>
+        `<div style="border-bottom:1px solid #eee;padding:8px 0;">
+            **${b.bike}** | Rent: ₹${b.rent}/day<br>
+            <small>Status: **${b.status.toUpperCase()}** | Expires: ${b.expiry}</small>
+        </div>`
+    ).join('') || 'You have not listed any bikes.';
+    openPage('listedBikes');
+}
+
+function openNotifs(){
+    notifList.innerHTML = notifs.slice().reverse().map(n =>
+        `<div style="border-bottom:1px solid #eee;padding:8px 0;">
+            ${n.msg}<br>
+            <small>${n.date}</small>
+        </div>`
+    ).join('') || 'No new notifications.';
+    openPage('notifPage');
+}
+
+
+// ====== WALLET RECHARGE (Demo) ======
+function recharge(){
+  const reAmtVal = Number(reAmt.value);
+  if(reAmtVal <= 0 || !reUpi.value.includes('@')){
+    alert('Invalid amount or UPI ID');
+    return;
+  }
+  wallet += reAmtVal;
+  saveAll();
+  addNotif(`💰 Wallet recharged with **₹${reAmtVal}**`);
+  alert(`✅ Wallet recharged successfully with ₹${reAmtVal}`);
+  nav('profile');
+}
+
+
+// ====== ADMIN PANEL (Bike Approval - Uses Base64) ======
+
+function openAdminLogin(targetPage){
+  desiredAdminPage = targetPage;
+  openPage('adminLogin');
+}
+
+function adminLogin(){
+  if(adminPhone.value !== ADMIN_PHONE || adminPass.value !== ADMIN_PASS){
+    alert('Invalid Admin Credentials');
+    return;
+  }
+  if(desiredAdminPage === 'adminBike'){
+    renderAdminBikes();
+    openPage('admin');
+  } else if (desiredAdminPage === 'adminKYC'){
+    renderAdminKYC();
+    openPage('adminKYC');
+  }
+}
+
+function renderAdminBikes(){
+  adminList.innerHTML = bikes.map((b, i) => `
+    <div class="card">
+      <div class="img-slider admin-img-row" style="margin-bottom:15px">
+          <img src="${b.photos.front}" title="Front Photo">
+          <img src="${b.photos.back}" title="Back Photo">
+          <img src="${b.photos.left}" title="Left Photo">
+          <img src="${b.photos.right}" title="Right Photo">
+      </div>
+      <p><b>${b.bike}</b> | Rent: ₹${b.rent}/day</p>
+      <p>Owner: ${b.owner} (${b.ownerPhone})</p>
+      <p>Expiry: ${b.expiry}</p>
+      <p>Status: <b>${b.status.toUpperCase()}</b></p>
+      ${b.status === 'pending' ? `
+        <button class="green" onclick="approveBike(${i})">Approve</button>
+        <button class="gray" onclick="rejectBike(${i})">Reject</button>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+function approveBike(i){
+  bikes[i].status = 'approved';
+  addNotif(`🎉 Your bike **${bikes[i].bike}** has been approved!`);
+  saveAll();
+  renderAdminBikes();
+  alert('Bike Approved');
+}
+
+function rejectBike(i){
+  bikes[i].status = 'rejected';
+  addNotif(`⚠️ Your bike **${bikes[i].bike}** was rejected. Contact support for details.`);
+  saveAll();
+  renderAdminBikes();
+  alert('Bike Rejected');
+}
+
+// ====== ADMIN PANEL (KYC Review - Uses Base64) ======
+
+function renderAdminKYC(){
+    const kycState = kycStatus.toUpperCase();
+    const timerText = kycStatus === "pending" ? ` (Submitted ${new Date(kycSubmittedAt).toLocaleString()})` : '';
+    adminKycState.innerText = kycState + timerText;
+    
+    // Call function to display KYC details
+    renderAdminKYCDetails();
+}
+
+function renderAdminKYCDetails(){
+    const container = document.getElementById('adminKYC').querySelector('.card');
+    
+    // Remove previous details if they exist
+    let existingDetails = document.getElementById('kycDetailsDisplay');
+    if (existingDetails) existingDetails.remove();
+
+    if (!kycData) {
+        // If there's no data, show the message and hide buttons
+        container.innerHTML += `<div id="kycDetailsDisplay"><p style="color:red;">❌ No KYC data submitted yet.</p></div>`;
+        container.querySelector('button.green').style.display = 'none';
+        container.querySelector('button.gray').style.display = 'none';
+        document.getElementById('rejectReason').style.display = 'none';
+        return;
+    }
+    
+    let html = `
+      <div id="kycDetailsDisplay" style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+          <h4>User Details:</h4>
+          <p><b>Name:</b> ${kycData.name}</p>
+          <p><b>Phone:</b> ${kycData.phone}</p>
+          
+          <h4>KYC Documents:</h4>
+          
+          <p style="margin-bottom: 5px;"><b>Aadhaar No:</b> ${kycData.aadhaar}</p>
+          <div class="img-slider"><img src="${kycData.aadhaar_photo}" style="width:100%" alt="Aadhaar Photo"></div>
+          
+          <p style="margin-bottom: 5px;"><b>PAN No:</b> ${kycData.pan}</p>
+          <div class="img-slider"><img src="${kycData.pan_photo}" style="width:100%" alt="PAN Photo"></div>
+          
+          <p style="margin-bottom: 5px;"><b>DL No:</b> ${kycData.dl}</p>
+          <div class="img-slider"><img src="${kycData.dl_photo}" style="width:100%" alt="DL Photo"></div>
+      </div>
+    `;
+    
+    // Insert the new details HTML after the reject reason area (textarea)
+    const rejectReasonTextarea = document.getElementById('rejectReason');
+    rejectReasonTextarea.insertAdjacentHTML('afterend', html);
+    
+    // Re-adjust the visibility of the main approval/reject buttons based on state
+    if(kycStatus !== 'pending'){
+        document.getElementById('rejectReason').style.display = 'none';
+        container.querySelector('button.green').style.display = 'none';
+        container.querySelector('button.gray').style.display = 'none';
+        container.querySelector('p b#adminKycState').innerHTML += `<br><small style="color:blue;">Review already completed.</small>`;
+    } else {
+        document.getElementById('rejectReason').style.display = 'block';
+        container.querySelector('button.green').style.display = 'block';
+        container.querySelector('button.gray').style.display = 'block';
+    }
+}
+
+function approveKYC(){
+    if(!kycData) {
+      alert("No KYC data to approve.");
+      return;
+    }
+    kycStatus = "approved";
+    kycReason = "";
+    saveAll();
+    addNotif("✅ Your KYC has been **approved**! You can now rent bikes.");
+    alert("KYC Approved");
+    renderAdminKYC();
+}
+
+function rejectKYC(){
+    if(!kycData) {
+      alert("No KYC data to reject.");
+      return;
+    }
+    const reason = rejectReason.value.trim();
+    if(!reason){
+        alert("Please provide a reason for rejection.");
+        return;
+    }
+    kycStatus = "rejected";
+    kycReason = reason;
+    saveAll();
+    addNotif(`❌ Your KYC was **rejected**. Reason: ${reason}`);
+    alert("KYC Rejected");
+    renderAdminKYC();
+    rejectReason.value = ''; 
+}
+
+
+// ====== INITIAL SETUP (Run when the script loads) ======
+
+const lphone = document.getElementById('lphone');
+if (localStorage.getItem('isLoggedIn') === 'true' || (lphone && lphone.value.length === 10)) {
+    // Attempt to open home page if the user seems logged in
+    openPage('home');
+} else {
+    // Default to login page
+    stack = []; 
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('login').classList.add('active');
+    stack.push('login');
+}
+</script>
+</body>
+</html>
